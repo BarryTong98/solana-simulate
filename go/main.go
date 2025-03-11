@@ -6,7 +6,6 @@ package main
 #include <stdbool.h>
 #include <stdlib.h>
 
-extern bool simulate_transaction_c();
 extern bool simulate_transaction_with_accounts_c(const char* accounts_json);
 */
 import "C"
@@ -14,10 +13,6 @@ import (
 	"fmt"
 	"unsafe"
 )
-
-func SimulateTransaction() bool {
-	return bool(C.simulate_transaction_c())
-}
 
 func SimulateTransactionWithAccounts(accountsJSON string) bool {
 	cAccountsJSON := C.CString(accountsJSON)

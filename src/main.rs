@@ -1,11 +1,10 @@
 use {
-    solana_program_runtime::__private::Hash,
     solana_sdk::{
         bs58,
         instruction::{AccountMeta, Instruction},
         message::Message,
         pubkey::Pubkey,
-        signature::{Keypair, Signer},
+        signature::Signer,
         transaction::{MessageHash, SanitizedTransaction, Transaction},
     },
     solana_simulate::{Simulator, SimulatorConfig},
@@ -23,12 +22,7 @@ fn main() {
 
     let simulator = Simulator::new(config);
 
-    // Create player from base58 private key
-    let signer_keypair_str = "your private key";
-    let signer_keypair_bytes = bs58::decode(signer_keypair_str)
-        .into_vec()
-        .unwrap();
-    let signer = Keypair::from_bytes(&signer_keypair_bytes).unwrap();
+    let signer = Pubkey::from_str("H7GCUaJMUgdQiNYyoQTTmwG4fSYMV8W8ECmATZ2kyNTJ").unwrap();
 
     // Create instruction data
     let instruction1_data = bs58::decode("3ipZX7g9NBXycb5v9QjqWwuhh8PxV9WL3HbJRPdURtmm5W1r5t7QtWMbGWB7mQgB8itRgPTMomJoFW7k4WhmYdYLDyWW5WMHN9M2TPGB2xFoTt3tkD87ECGUXNUzp7WskoNcjTtM9nVZMxZDcAGN1GAD82P9vhnSsQKiE5Kh2").into_vec().unwrap();
@@ -93,11 +87,9 @@ fn main() {
     // TODO BARRRY 检查一下这里的message是不是跟他们的tx一样，如果一样就直接marshal一下
     // Create transaction
     let message = Message::new(&[instruction1, instruction2,
-        instruction3, instruction4], Some(&signer.pubkey()));
-    let transaction = Transaction::new(
-        &[&signer],
+        instruction3, instruction4], Some(&signer));
+    let transaction = Transaction::new_unsigned(
         message,
-        Hash::default(),
     );
 
     // Convert to sanitized transaction

@@ -20,7 +20,6 @@ use {
         collections::HashSet,
         path::PathBuf,
         str::FromStr,
-        slice,
         ffi::{c_void, CStr, c_char},
     },
 };
@@ -33,17 +32,7 @@ pub fn simulate_transaction_with_accounts(accounts_json: &str) -> bool {
 
     let simulator = Simulator::new(config);
 
-    // Create player from base58 private key
-    let signer_keypair_str = "2jDrznQF1ovNSnqfqRLVfnxHsynyFtvNVkax3ZjeN6mLfTrCB1yPrfVFjXks81augWtk6GFiakHmhwX29DAYBEv4";
-    let signer_keypair_bytes = match bs58::decode(signer_keypair_str).into_vec() {
-        Ok(bytes) => bytes,
-        Err(_) => return false,
-    };
-
-    let signer = match Keypair::from_bytes(&signer_keypair_bytes) {
-        Ok(keypair) => keypair,
-        Err(_) => return false,
-    };
+    let signer = Pubkey::from_str("H7GCUaJMUgdQiNYyoQTTmwG4fSYMV8W8ECmATZ2kyNTJ").unwrap();
 
     // Create instruction data
     let instruction1_data = match bs58::decode("3ipZX7g9NBXycb5v9QjqWwuhh8PxV9WL3HbJRPdURtmm5W1r5t7QtWMbGWB7mQgB8itRgPTMomJoFW7k4WhmYdYLDyWW5WMHN9M2TPGB2xFoTt3tkD87ECGUXNUzp7WskoNcjTtM9nVZMxZDcAGN1GAD82P9vhnSsQKiE5Kh2").into_vec() {
@@ -123,11 +112,9 @@ pub fn simulate_transaction_with_accounts(accounts_json: &str) -> bool {
     );
 
     // Create transaction
-    let message = Message::new(&[instruction1, instruction2, instruction3, instruction4], Some(&signer.pubkey()));
-    let transaction = Transaction::new(
-        &[&signer],
+    let message = Message::new(&[instruction1, instruction2,  instruction3, instruction4], Some(&signer));
+    let transaction = Transaction::new_unsigned(
         message,
-        Hash::default(),
     );
 
     // Convert to sanitized transaction
