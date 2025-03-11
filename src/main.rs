@@ -90,7 +90,7 @@ fn main() {
             AccountMeta::new(Pubkey::from_str("H7GCUaJMUgdQiNYyoQTTmwG4fSYMV8W8ECmATZ2kyNTJ").unwrap(), true),
         ],
     );
-
+    // TODO BARRRY 检查一下这里的message是不是跟他们的tx一样，如果一样就直接marshal一下
     // Create transaction
     let message = Message::new(&[instruction1, instruction2,
         instruction3, instruction4], Some(&signer.pubkey()));
