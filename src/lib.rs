@@ -20,13 +20,15 @@ use {
         collections::HashSet,
         path::PathBuf,
         str::FromStr,
+        slice,
+        ffi::{c_void, CStr, c_char},
     },
 };
 
-
-pub fn simulate_transaction() -> bool {
+// 接受accounts_json参数的新函数
+pub fn simulate_transaction_with_accounts(accounts_json: &str) -> bool {
     let config = SimulatorConfig {
-        accounts_path: PathBuf::from("./accounts.json"),
+        accounts_path: PathBuf::from(accounts_json),
     };
 
     let simulator = Simulator::new(config);
@@ -153,12 +155,22 @@ pub fn simulate_transaction() -> bool {
 
     println!("Simulation result: {:?}", simulation_result.result);
 
-
     simulation_result.result.is_ok()
 }
 
-
+// 为CGO导出的C函数，接受C字符串作为参数
 #[no_mangle]
-pub extern "C" fn simulate_transaction_c() -> bool {
-    simulate_transaction()
+pub extern "C" fn simulate_transaction_with_accounts_c(accounts_json_ptr: *const c_char) -> bool {
+    // 安全地从C字符串转换为Rust字符串
+    let accounts_json = unsafe {
+        if accounts_json_ptr.is_null() {
+            return false;
+        }
+        match CStr::from_ptr(accounts_json_ptr).to_str() {
+            Ok(s) => s,
+            Err(_) => return false,
+        }
+    };
+    
+    simulate_transaction_with_accounts(accounts_json)
 }
