@@ -27,7 +27,7 @@ use {
 // 接受accounts_json参数的新函数
 pub fn simulate_transaction_with_accounts(accounts_json: &str) -> bool {
     let config = SimulatorConfig {
-        accounts_path: PathBuf::from(accounts_json),
+        accounts_json_str: accounts_json.to_string(),
     };
 
     let simulator = Simulator::new(config);

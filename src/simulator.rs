@@ -79,7 +79,7 @@ impl ForkGraph for MockForkGraph {
 
 #[derive(Debug, Default, Clone)]
 pub struct SimulatorConfig {
-    pub accounts_path: PathBuf,
+    pub accounts_json_str: String,
 }
 
 #[derive(Clone)]
@@ -90,8 +90,7 @@ pub struct Simulator {
 
 impl Simulator {
     pub fn new(config: SimulatorConfig) -> Self {
-        let accounts_json_path = config.accounts_path.clone();
-        let accounts_data: String = fs::read_to_string(accounts_json_path).unwrap();
+        let accounts_data: String = config.accounts_json_str;
         let accounts_data: serde_json::Value = serde_json::from_str(&accounts_data).unwrap();
         let accounts_slice: Vec<(Pubkey, AccountSharedData)> = accounts_data["accounts"]
             .as_array()
