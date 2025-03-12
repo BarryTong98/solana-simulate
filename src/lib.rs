@@ -53,14 +53,14 @@ fn parse_instructions_from_json_str(json_content: &str) -> Result<Vec<Instructio
         let mut accounts = Vec::new();
 
         for acc_json in accounts_json {
-            let pubkey_str = acc_json["PublicKey"].as_str()
+            let pubkey_str = acc_json["publicKey"].as_str()
                 .ok_or("PublicKey is not a string")?;
             let pubkey = Pubkey::from_str(pubkey_str)?;
 
-            let is_writable = acc_json["IsWritable"].as_bool()
+            let is_writable = acc_json["isWritable"].as_bool()
                 .ok_or("IsWritable is not a boolean")?;
 
-            let is_signer = acc_json["IsSigner"].as_bool()
+            let is_signer = acc_json["isSigner"].as_bool()
                 .ok_or("IsSigner is not a boolean")?;
 
             let account_meta = if is_writable {
