@@ -6,37 +6,46 @@ package main
 #include <stdbool.h>
 #include <stdlib.h>
 
-extern bool simulate_transaction_with_accounts_c(const char* accounts_json);
+extern bool simulate_transaction_with_accounts_c(const char* accounts_json, const char* tx_json);
 */
 import "C"
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"unsafe"
 )
 
-// 修改后的函数，接受accounts.json的内容作为参数
-func SimulateTransactionWithAccounts(accountsJSON string) bool {
+// SimulateTransactionWithAccounts calls the Rust function to simulate a Solana transaction
+// using the provided accounts JSON and transaction JSON data
+func SimulateTransactionWithAccounts(accountsJSON, txJSON string) bool {
 	cAccountsJSON := C.CString(accountsJSON)
+	cTxJSON := C.CString(txJSON)
 	defer C.free(unsafe.Pointer(cAccountsJSON))
+	defer C.free(unsafe.Pointer(cTxJSON))
 
-	return bool(C.simulate_transaction_with_accounts_c(cAccountsJSON))
+	return bool(C.simulate_transaction_with_accounts_c(cAccountsJSON, cTxJSON))
 }
 
 func main() {
 	fmt.Println("Simulating transaction...")
 
-	// 读取accounts.json文件
-	jsonContent, err := ioutil.ReadFile("./accounts.json")
+	// Read accounts.json file
+	accountsJSON, err := os.ReadFile("./accounts.json")
 	if err != nil {
-		log.Fatalf("无法读取accounts.json文件: %v", err)
+		log.Fatalf("Failed to read accounts.json file: %v", err)
 		os.Exit(1)
 	}
 
-	// 将文件内容作为字符串传递给Rust函数
-	result := SimulateTransactionWithAccounts(string(jsonContent))
+	// Read tx.json file
+	txJSON, err := os.ReadFile("./tx.json")
+	if err != nil {
+		log.Fatalf("Failed to read tx.json file: %v", err)
+		os.Exit(1)
+	}
+
+	// Pass both JSON strings to the Rust function
+	result := SimulateTransactionWithAccounts(string(accountsJSON), string(txJSON))
 
 	if result {
 		fmt.Printf("Transaction simulation succeeded: %v\n", result)
