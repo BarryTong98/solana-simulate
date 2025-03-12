@@ -25,7 +25,7 @@ struct AccountResponse {
 #[derive(Debug, Serialize, Deserialize)]
 struct AccountEntry {
     pubkey: String,
-    account: AccountInfo,
+    account: Option<AccountInfo>, // Change to Option to handle null values
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,6 +36,7 @@ struct RPCRequest {
     params: Vec<Value>,
 }
 
+// Modified to handle null results
 #[derive(Debug, Serialize, Deserialize)]
 struct RPCResponse {
     jsonrpc: String,
@@ -46,7 +47,7 @@ struct RPCResponse {
 #[derive(Debug, Serialize, Deserialize)]
 struct RPCResult {
     context: Context,
-    value: AccountInfo,
+    value: Option<AccountInfo>, // Change to Option to handle null values
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,18 +60,23 @@ struct Context {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let accounts = vec![
-        "H7GCUaJMUgdQiNYyoQTTmwG4fSYMV8W8ECmATZ2kyNTJ",
-        "A3TiDsQgQFKSLXcj51Jiigm4Fd4F27GGrsXAsHaXh3E1",
+        "DHicUK6e8nXp7UzsGP3zHvFNoKGCswN7GKxKQ1cBEDhX",
+        "4GqyEzL5fyM3Bvyy4wuQzYcaq9XZ9qBe4ksPMr5RazG6",
+        "9yj3zvLS3fDMqi1F8zhkaWfq8TZpZWHe6cz1Sgt7djXf",
+        "uCk125EJf7iCjz43aSdzuyMAT5eii6c5zKVxEnGnosa",
+        "F9Vt8r3FiJttff8QWaf9ffdvpKz5iQrF14uGGiRZgsCN",
+        "mo7V3zB8pRqrTVnSk9xG2vNTnwPq2ZFTv1DBsg7YGCv",
+        "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+        "11111111111111111111111111111111",
+        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "HuTkmnrv4zPnArMqpbMbFhfwzTR7xfWQZHH1aQKzDKFZ",
         "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1",
-        "EvFmWAGp82Kfenmh8xFzSBGYChtmWXmqqTK9QSWW9BqB",
-        "A9M4vMERK54sEpGefBVnvxJhJRa9U6tUGbkYgYbjci1B",
-        "Cg1sa7AgfqVTQYREXGv4KwB9qBq5ymNddGTd1CdShjxZ",
         "So11111111111111111111111111111111111111112",
         "SysvarRent111111111111111111111111111111111",
-        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
         "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
-        "A7ZG7ByDi8DpzT9Ab7CiXhvgYTJQmaDPJkMDoPitaCQV",
-        "14ryLxgtBbjF6RvdkPb8z4c3R46Dj5WprCVAGtW7EzpN",
+        "EDDSpjZHrsFKYTMJDcBqXAjkLcu9EKdvrQR4XnqsXErH",
+        "BbNg33EhQ4RcJ2KVmvt6No9uvQmtCS6NfjWKsK1GEBsC",
+        "A7ZG7ByDi8DpzT9Ab7CiXhvgYTJQmaDPJkMDoPitaCQV"
     ];
 
     let mut response = AccountResponse {
@@ -84,7 +90,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for acc in accounts {
         time::sleep(Duration::from_secs(1)).await;
 
-        let rpc_req = RPCRequest {
+        // First try with base64 encoding
+        let rpc_req_base64 = RPCRequest {
             jsonrpc: "2.0".to_string(),
             id: 1,
             method: "getAccountInfo".to_string(),
@@ -96,22 +103,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ],
         };
 
-        let res = client
-            .post("https://api.mainnet-beta.solana.com")
-            .headers(headers.clone())
-            .json(&rpc_req)
-            .send()
-            .await?;
+        match fetch_account_info(&client, &headers, &rpc_req_base64, acc).await {
+            Ok(entry) => {
+                response.accounts.push(entry);
+                println!("Successfully fetched info for: {}", acc);
+            }
+            Err(e) => {
+                println!("Error fetching account {} with base64 encoding: {}", acc, e);
+                println!("Trying with jsonParsed encoding...");
 
-        let body = res.text().await?;
-        println!("{}", body);
+                // Fallback to jsonParsed encoding
+                let rpc_req_json_parsed = RPCRequest {
+                    jsonrpc: "2.0".to_string(),
+                    id: 1,
+                    method: "getAccountInfo".to_string(),
+                    params: vec![
+                        json!(acc),
+                        json!({
+                            "encoding": "jsonParsed"
+                        }),
+                    ],
+                };
 
-        let rpc_resp: RPCResponse = serde_json::from_str(&body)?;
-
-        response.accounts.push(AccountEntry {
-            pubkey: acc.to_string(),
-            account: rpc_resp.result.value,
-        });
+                match fetch_account_info(&client, &headers, &rpc_req_json_parsed, acc).await {
+                    Ok(entry) => {
+                        response.accounts.push(entry);
+                        println!("Successfully fetched info for {} with jsonParsed encoding", acc);
+                    }
+                    Err(e) => {
+                        println!("Error fetching account {} with jsonParsed encoding: {}", acc, e);
+                        // Still add the account to the response, but with null account info
+                        response.accounts.push(AccountEntry {
+                            pubkey: acc.to_string(),
+                            account: None,
+                        });
+                    }
+                }
+            }
+        }
     }
 
     let json_data = serde_json::to_string_pretty(&response)?;
@@ -119,4 +148,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Account information has been written to accounts.json");
     Ok(())
-} 
+}
+
+async fn fetch_account_info(
+    client: &Client,
+    headers: &HeaderMap,
+    rpc_req: &RPCRequest,
+    acc: &str,
+) -> Result<AccountEntry, Box<dyn std::error::Error>> {
+    let res = client
+        .post("https://api.mainnet-beta.solana.com")
+        .headers(headers.clone())
+        .json(&rpc_req)
+        .send()
+        .await?;
+
+    let body = res.text().await?;
+
+    // Optional: Print out response for debugging
+    println!("Response for {}: {}", acc, body);
+
+    let rpc_resp: RPCResponse = serde_json::from_str(&body)?;
+
+    Ok(AccountEntry {
+        pubkey: acc.to_string(),
+        account: rpc_resp.result.value,
+    })
+}

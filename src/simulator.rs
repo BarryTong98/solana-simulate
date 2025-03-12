@@ -462,7 +462,6 @@ pub fn create_executable_environment(
 
     program_cache.environments = ProgramRuntimeEnvironments {
         program_runtime_v1: Arc::new(program_runtime_environment),
-        // We are not using program runtime v2
         program_runtime_v2: Arc::new(BuiltinProgram::new_loader(Config::default())),
     };
 
@@ -471,33 +470,41 @@ pub fn create_executable_environment(
     // add programs to cache
     for key in account_keys.iter() {
         if let Some(account) = mock_bank.get_account_shared_data(key) {
-            if account.executable() && *account.owner() == solana_sdk::bpf_loader_upgradeable::id()
-            {
+            if account.executable() && *account.owner() == solana_sdk::bpf_loader_upgradeable::id() {
                 let data = account.data();
-                let program_data_account_key = Pubkey::try_from(data[4..].to_vec()).unwrap();
-                let program_data_account = mock_bank
-                    .get_account_shared_data(&program_data_account_key)
-                    .unwrap();
+                if data.len() < 4 {
+                    continue;
+                }
+                
+                let program_data_account_key = match Pubkey::try_from(data[4..].to_vec()) {
+                    Ok(key) => key,
+                    Err(_) => continue,
+                };
+
+                let program_data_account = match mock_bank.get_account_shared_data(&program_data_account_key) {
+                    Some(acc) => acc,
+                    None => continue,
+                };
+
                 let program_data = program_data_account.data();
+                if program_data.len() < 45 {
+                    continue;
+                }
+
                 let elf_bytes = program_data[45..].to_vec();
+                let program_runtime_environment = program_cache.environments.program_runtime_v1.clone();
 
-                let program_runtime_environment =
-                    program_cache.environments.program_runtime_v1.clone();
-
-                program_cache.assign_program(
-                    *key,
-                    Arc::new(
-                        ProgramCacheEntry::new(
-                            &solana_sdk::bpf_loader_upgradeable::id(),
-                            program_runtime_environment,
-                            0,
-                            0,
-                            &elf_bytes,
-                            elf_bytes.len(),
-                            &mut LoadProgramMetrics::default(),
-                        ).unwrap(),
-                    ),
-                );
+                if let Ok(cache_entry) = ProgramCacheEntry::new(
+                    &solana_sdk::bpf_loader_upgradeable::id(),
+                    program_runtime_environment,
+                    0,
+                    0,
+                    &elf_bytes,
+                    elf_bytes.len(),
+                    &mut LoadProgramMetrics::default(),
+                ) {
+                    program_cache.assign_program(*key, Arc::new(cache_entry));
+                }
             }
         }
     }
