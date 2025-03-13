@@ -142,7 +142,6 @@ pub fn simulate_transaction_with_accounts(accounts_json: &str,tx_json: &str) -> 
 
 #[no_mangle]
 pub extern "C" fn simulate_transaction_with_accounts_c(accounts_json_ptr: *const c_char, tx_json_ptr: *const c_char) -> bool {
-    // 提取C字符串的通用函数
     let c_str_to_rust = |ptr: *const c_char| -> Option<&'static str> {
         if ptr.is_null() {
             return None;
