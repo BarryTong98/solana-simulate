@@ -266,7 +266,7 @@ pub fn create_program_accounts(program_id: &Pubkey, program_data: &[u8]) -> (Acc
 }
 
 #[no_mangle]
-pub extern "C" fn simulate_program_with_so(
+pub extern "C" fn simulate_transaction(
     program_id_str: *const c_char,
     accounts_json_ptr: *const c_char,
     tx_json_ptr: *const c_char,

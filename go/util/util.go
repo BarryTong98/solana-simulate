@@ -7,7 +7,7 @@ package util
 #include <stdbool.h>
 #include <stdlib.h>
 
-extern bool simulate_program_with_so(
+extern bool simulate_transaction(
     const char* program_id,
     const char* accounts_json,
     const char* tx_json,
@@ -19,8 +19,8 @@ import (
     "unsafe"
 )
 
-// SimulateProgramWithSO calls the Rust function to simulate a Solana program
-func SimulateProgramWithSO(programID, accountsJSON, txJSON string, programSoBase64 string) bool {
+// SimulateTransaction calls the Rust function to simulate a Solana program
+func SimulateTransaction(programID, accountsJSON, txJSON string, programSoBase64 string) bool {
     // Convert to C strings
     cProgramID := C.CString(programID)
     cAccountsJSON := C.CString(accountsJSON)
@@ -33,7 +33,7 @@ func SimulateProgramWithSO(programID, accountsJSON, txJSON string, programSoBase
     defer C.free(unsafe.Pointer(cTxJSON))
     defer C.free(unsafe.Pointer(cProgramSoBase64))
 
-    return bool(C.simulate_program_with_so(
+    return bool(C.simulate_transaction(
         cProgramID,
         cAccountsJSON,
         cTxJSON,

@@ -1,5 +1,5 @@
 use base64::Engine;
-use solana_simulate::simulate_program_with_so;
+use solana_simulate::simulate_transaction;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::Read;
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 6. Call simulation function
     let success = unsafe {
-        simulate_program_with_so(
+        simulate_transaction(
             program_id_c.as_ptr(),
             accounts_json_c.as_ptr(),
             tx_json_c.as_ptr(),

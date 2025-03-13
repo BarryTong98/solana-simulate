@@ -41,7 +41,7 @@ func main() {
 	programSoBase64 := base64.StdEncoding.EncodeToString(programSoData)
 
 	// Call Rust function for simulation
-	result := util.SimulateProgramWithSO(
+	result := util.SimulateTransaction(
 		programID,
 		string(accountsJSON),
 		string(txJSON),
