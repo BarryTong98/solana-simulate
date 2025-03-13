@@ -2,6 +2,10 @@ mod simulator;
 
 use std::fs::File;
 use std::io::Read;
+use solana_program_runtime::__private::Rent;
+use solana_sdk::account::{Account, AccountSharedData, WritableAccount};
+use solana_sdk::bpf_loader_upgradeable;
+use solana_sdk::bpf_loader_upgradeable::{get_program_data_address, UpgradeableLoaderState};
 pub use simulator::{
     Simulator,
     SimulatorConfig,
@@ -162,4 +166,100 @@ pub extern "C" fn simulate_transaction_with_accounts_c(accounts_json_ptr: *const
     };
 
     simulate_transaction_with_accounts(accounts_json, tx_json)
+}
+pub fn simulate_program(
+    simulator: &Simulator,
+    program_id: &Pubkey,
+    instruction_data: &[u8],
+    accounts: &[AccountMeta],
+) -> TransactionSimulationResult {
+    // 1. Create instruction
+    let instruction = Instruction::new_with_bytes(
+        *program_id,
+        instruction_data,
+        accounts.to_vec(),
+    );
+
+    // 2. Create transaction
+    let message = Message::new(&[instruction], Some(&program_id));
+    let transaction = Transaction::new_unsigned(message);
+
+    // 3. Convert to SanitizedTransaction
+    let sanitized_transaction = SanitizedTransaction::try_create(
+        transaction.into(),
+        MessageHash::Compute,
+        None,
+        simulator.clone(),
+        &HashSet::new(),
+    ).unwrap();
+
+    // 4. Execute simulation
+    simulator.simulate_transaction_unchecked(
+        &sanitized_transaction,
+        true, // Enable CPI logging
+    )
+}
+
+pub fn create_simulation_environment(
+    program_id: &Pubkey,
+    program_account: AccountSharedData,
+    programdata_account: AccountSharedData,
+) -> Simulator {
+    // 1. Create account mapping
+    let programdata_address = get_program_data_address(program_id);
+    let mut account_map = vec![
+        (program_id, program_account),
+        (&programdata_address, programdata_account),
+    ];
+
+    // 2. Create Simulator configuration
+    let config = SimulatorConfig {
+        accounts_json_str: serde_json::to_string(&account_map).unwrap(),
+    };
+
+    // 3. Create Simulator instance
+    Simulator::new(config)
+}
+
+pub fn create_program_accounts(program_id: &Pubkey, program_data: &[u8]) -> (AccountSharedData, AccountSharedData) {
+    // 1. Create Program Data Account
+    let programdata_address = get_program_data_address(program_id);
+    let programdata_account = {
+        let space = UpgradeableLoaderState::size_of_programdata_metadata() + program_data.len();
+        let lamports = Rent::default().minimum_balance(space);
+        let mut data = bincode::serialize(&UpgradeableLoaderState::ProgramData {
+            slot: 0,
+            upgrade_authority_address: Some(Pubkey::default()),
+        }).unwrap();
+        data.extend_from_slice(program_data);
+
+        AccountSharedData::from(Account {
+            lamports,
+            data,
+            owner: bpf_loader_upgradeable::id(),
+            executable: false,
+            rent_epoch: 0,
+        })
+    };
+
+    // 2. Create Program Account
+    let program_account = {
+        let space = UpgradeableLoaderState::size_of_program();
+        let lamports = Rent::default().minimum_balance(space);
+        let data = bincode::serialize(&UpgradeableLoaderState::Program {
+            programdata_address,
+        }).unwrap();
+
+        let mut account = AccountSharedData::from(Account {
+            lamports,
+            data,
+            owner: bpf_loader_upgradeable::id(),
+            executable: true,
+            rent_epoch: 0,
+        });
+        account.set_executable(true);
+        account
+    };
+
+    (program_account, programdata_account)
 }
