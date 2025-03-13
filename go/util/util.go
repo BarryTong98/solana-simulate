@@ -16,20 +16,11 @@ extern bool simulate_program_with_so(
 */
 import "C"
 import (
-    "encoding/base64"
-    "os"
     "unsafe"
 )
 
 // SimulateProgramWithSO calls the Rust function to simulate a Solana program
-func SimulateProgramWithSO(programID, accountsJSON, txJSON string, programSoPath string) bool {
-    // Read program.so file and convert to base64
-    programSoData, err := os.ReadFile(programSoPath)
-    if err != nil {
-        return false
-    }
-    programSoBase64 := base64.StdEncoding.EncodeToString(programSoData)
-
+func SimulateProgramWithSO(programID, accountsJSON, txJSON string, programSoBase64 string) bool {
     // Convert to C strings
     cProgramID := C.CString(programID)
     cAccountsJSON := C.CString(accountsJSON)
