@@ -1,36 +1,48 @@
+// main.go
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
+    "fmt"
+    "log"
+    "os"
 
-	"github.com/BarryTong98/solana-simulate/util"
+    "github.com/BarryTong98/solana-simulate/util"
 )
 
 func main() {
-	fmt.Println("Simulating transaction...")
+    fmt.Println("Simulating program...")
 
-	// Read accounts.json file
-	accountsJSON, err := os.ReadFile("./accounts.json")
-	if err != nil {
-		log.Fatalf("Failed to read accounts.json file: %v", err)
-		os.Exit(1)
-	}
+    // Program ID
+    programID := "HuTkmnrv4zPnArMqpbMbFhfwzTR7xfWQZHH1aQKzDKFZ"
 
-	// Read tx.json file
-	txJSON, err := os.ReadFile("./tx.json")
-	if err != nil {
-		log.Fatalf("Failed to read tx.json file: %v", err)
-		os.Exit(1)
-	}
+    // Read accounts.json file
+    accountsJSON, err := os.ReadFile("./accounts.json")
+    if err != nil {
+        log.Fatalf("Failed to read accounts.json file: %v", err)
+        os.Exit(1)
+    }
 
-	// Pass both JSON strings to the Rust function
-	result := util.SimulateTransactionWithAccounts(string(accountsJSON), string(txJSON))
+    // Read tx.json file
+    txJSON, err := os.ReadFile("./tx.json")
+    if err != nil {
+        log.Fatalf("Failed to read tx.json file: %v", err)
+        os.Exit(1)
+    }
 
-	if result {
-		fmt.Printf("Transaction simulation succeeded: %v\n", result)
-	} else {
-		fmt.Println("Transaction simulation failed!")
-	}
+    // Path to program.so file
+    programSoPath := "/Users/barry/binance/solana-simulate/src/program.so"
+
+    // Call Rust function for simulation
+    result := util.SimulateProgramWithSO(
+        programID,
+        string(accountsJSON),
+        string(txJSON),
+        programSoPath,
+    )
+
+    if result {
+        fmt.Println("Program simulation succeeded!")
+    } else {
+        fmt.Println("Program simulation failed!")
+    }
 }

@@ -1,3 +1,4 @@
+// util.go
 package util
 
 /*
@@ -6,20 +7,45 @@ package util
 #include <stdbool.h>
 #include <stdlib.h>
 
-extern bool simulate_transaction_with_accounts_c(const char* accounts_json, const char* tx_json);
+extern bool simulate_program_with_so(
+    const char* program_id,
+    const char* accounts_json,
+    const char* tx_json,
+    const char* program_so_base64
+);
 */
 import "C"
 import (
-   "unsafe"
+    "encoding/base64"
+    "os"
+    "unsafe"
 )
 
-// SimulateTransactionWithAccounts calls the Rust function to simulate a Solana transaction
-// using the provided accounts JSON and transaction JSON data
-func SimulateTransactionWithAccounts(accountsJSON, txJSON string) bool {
-   cAccountsJSON := C.CString(accountsJSON)
-   cTxJSON := C.CString(txJSON)
-   defer C.free(unsafe.Pointer(cAccountsJSON))
-   defer C.free(unsafe.Pointer(cTxJSON))
+// SimulateProgramWithSO calls the Rust function to simulate a Solana program
+func SimulateProgramWithSO(programID, accountsJSON, txJSON string, programSoPath string) bool {
+    // Read program.so file and convert to base64
+    programSoData, err := os.ReadFile(programSoPath)
+    if err != nil {
+        return false
+    }
+    programSoBase64 := base64.StdEncoding.EncodeToString(programSoData)
 
-   return bool(C.simulate_transaction_with_accounts_c(cAccountsJSON, cTxJSON))
+    // Convert to C strings
+    cProgramID := C.CString(programID)
+    cAccountsJSON := C.CString(accountsJSON)
+    cTxJSON := C.CString(txJSON)
+    cProgramSoBase64 := C.CString(programSoBase64)
+
+    // Ensure C strings are freed
+    defer C.free(unsafe.Pointer(cProgramID))
+    defer C.free(unsafe.Pointer(cAccountsJSON))
+    defer C.free(unsafe.Pointer(cTxJSON))
+    defer C.free(unsafe.Pointer(cProgramSoBase64))
+
+    return bool(C.simulate_program_with_so(
+        cProgramID,
+        cAccountsJSON,
+        cTxJSON,
+        cProgramSoBase64,
+    ))
 }

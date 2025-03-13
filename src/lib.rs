@@ -2,7 +2,9 @@ mod simulator;
 
 use std::fs::File;
 use std::io::Read;
-use solana_program_runtime::__private::Rent;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
+use solana_program_runtime::__private::{ReadableAccount, Rent};
 use solana_sdk::account::{Account, AccountSharedData, WritableAccount};
 use solana_sdk::bpf_loader_upgradeable;
 use solana_sdk::bpf_loader_upgradeable::{get_program_data_address, UpgradeableLoaderState};
@@ -23,7 +25,6 @@ use {
     },
     std::{
         collections::HashSet,
-        path::PathBuf,
         str::FromStr,
         ffi::{CStr, c_char},
     },
@@ -262,4 +263,119 @@ pub fn create_program_accounts(program_id: &Pubkey, program_data: &[u8]) -> (Acc
     };
 
     (program_account, programdata_account)
+}
+
+#[no_mangle]
+pub extern "C" fn simulate_program_with_so(
+    program_id_str: *const c_char,
+    accounts_json_ptr: *const c_char,
+    tx_json_ptr: *const c_char,
+    program_so_base64: *const c_char,
+) -> bool {
+    // 1. Convert C strings to Rust strings
+    let c_str_to_rust = |ptr: *const c_char| -> Option<&'static str> {
+        if ptr.is_null() {
+            return None;
+        }
+        unsafe {
+            CStr::from_ptr(ptr).to_str().ok()
+        }
+    };
+
+    let program_id_str = match c_str_to_rust(program_id_str) {
+        Some(s) => s,
+        None => return false,
+    };
+
+    let accounts_json = match c_str_to_rust(accounts_json_ptr) {
+        Some(s) => s,
+        None => return false,
+    };
+
+    let tx_json = match c_str_to_rust(tx_json_ptr) {
+        Some(s) => s,
+        None => return false,
+    };
+
+    let program_so_base64 = match c_str_to_rust(program_so_base64) {
+        Some(s) => s,
+        None => return false,
+    };
+
+    // 2. Decode program_id
+    let program_id = match Pubkey::from_str(program_id_str) {
+        Ok(pk) => pk,
+        Err(_) => return false,
+    };
+
+    // 3. Decode program.so file content
+    let program_data = match BASE64_STANDARD.decode(program_so_base64) {
+        Ok(data) => data,
+        Err(_) => return false,
+    };
+
+    // 4. Create program accounts
+    let (program_account, programdata_account) = create_program_accounts(&program_id, &program_data);
+
+    // 5. Parse JSON account data
+    let mut accounts_data: serde_json::Value = match serde_json::from_str(accounts_json) {
+        Ok(data) => data,
+        Err(_) => return false,
+    };
+
+    // 6. Add program accounts to JSON data
+    let programdata_address = get_program_data_address(&program_id);
+
+    // Add Program Account
+    let program_account_json = serde_json::json!({
+        "pubkey": program_id.to_string(),
+        "account": {
+            "lamports": program_account.lamports(),
+            "data": [BASE64_STANDARD.encode(program_account.data()), "base64"],
+            "owner": program_account.owner().to_string(),
+            "executable": program_account.executable(),
+            "rentEpoch": program_account.rent_epoch(),
+            "space": program_account.data().len()
+        }
+    });
+
+    // Add Program Data Account
+    let programdata_account_json = serde_json::json!({
+        "pubkey": programdata_address.to_string(),
+        "account": {
+            "lamports": programdata_account.lamports(),
+            "data": [BASE64_STANDARD.encode(programdata_account.data()), "base64"],
+            "owner": programdata_account.owner().to_string(),
+            "executable": programdata_account.executable(),
+            "rentEpoch": programdata_account.rent_epoch(),
+            "space": programdata_account.data().len()
+        }
+    });
+
+    // Add new accounts to existing account list
+    if let Some(accounts) = accounts_data.get_mut("accounts").and_then(|a| a.as_array_mut()) {
+        accounts.push(program_account_json);
+        accounts.push(programdata_account_json);
+    }
+
+    // 7. Parse and modify transaction JSON
+    let mut tx_data: serde_json::Value = match serde_json::from_str(tx_json) {
+        Ok(data) => data,
+        Err(_) => return false,
+    };
+
+    // Update all instruction programIds
+    if let Some(instructions) = tx_data.get_mut("instructions").and_then(|i| i.as_array_mut()) {
+        for instruction in instructions {
+            if let Some(program_id_field) = instruction.get_mut("programId") {
+                *program_id_field = serde_json::Value::String(program_id.to_string());
+            }
+        }
+    }
+
+    // 8. Call simulation function
+    simulate_transaction_with_accounts(
+        &serde_json::to_string(&accounts_data).unwrap_or_default(),
+        &serde_json::to_string(&tx_data).unwrap_or_default(),
+    )
 }
