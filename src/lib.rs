@@ -37,7 +37,7 @@ fn parse_instructions_from_json_str(json_content: &str) -> Result<Vec<Instructio
 
     for instr_json in instructions_json {
         // Get program ID
-        let program_id_str = instr_json["programIdIndex"].as_str()
+        let program_id_str = instr_json["programId"].as_str()
             .ok_or("programIdIndex is not a string")?;
         let program_id = Pubkey::from_str(program_id_str)?;
 

@@ -1,7 +1,7 @@
 {
   "instructions": [
     {
-      "programIdIndex": "11111111111111111111111111111111",
+      "programId": "11111111111111111111111111111111",
       "accounts": [
         {
           "publicKey": "DHicUK6e8nXp7UzsGP3zHvFNoKGCswN7GKxKQ1cBEDhX",
@@ -22,7 +22,7 @@
       "data": "3ipZWyostf7mVDZFmAiZQwUemkdqvTxhbpHcKP12Bczi8KmP72yapwSaaab1qX2pfKZUBibsC3j8Trmso44hHVxgU3DGQ154AW5Sa9YZLETasitb641nK3wFjJEJSYAuzVtG4nVc4pkL4wt3mbMx3tUXxGziPvEbyS9NSSZ5i"
     },
     {
-      "programIdIndex": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       "accounts": [
         {
           "publicKey": "EULGMjJMtAgFiYjGJAwmBKTJaxXghjNsuWhMumfJK5m9",
@@ -48,7 +48,7 @@
       "data": "2"
     },
     {
-      "programIdIndex": "HuTkmnrv4zPnArMqpbMbFhfwzTR7xfWQZHH1aQKzDKFZ",
+      "programId": "HuTkmnrv4zPnArMqpbMbFhfwzTR7xfWQZHH1aQKzDKFZ",
       "accounts": [
         {
           "publicKey": "DHicUK6e8nXp7UzsGP3zHvFNoKGCswN7GKxKQ1cBEDhX",
@@ -184,7 +184,7 @@
       "data": "F2fEQRSZSQd3BWwrUk3J5oAJiW4kuwKWN2potvyGsXMCrVMUQ4YS5mRb2BFquGpsRjuarVVa7N14Vxv5gtTHHmy6Y"
     },
     {
-      "programIdIndex": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       "accounts": [
         {
           "publicKey": "EULGMjJMtAgFiYjGJAwmBKTJaxXghjNsuWhMumfJK5m9",
