@@ -1,7 +1,7 @@
 {
   "instructions": [
     {
-      "programId": "xx",
+      "programId": "HuTkmnrv4zPnArMqpbMbFhfwzTR7xfWQZHH1aQKzDKFZ",
       "accounts": [
         {
           "publicKey": "DHicUK6e8nXp7UzsGP3zHvFNoKGCswN7GKxKQ1cBEDhX",
@@ -9,7 +9,7 @@
           "isSigner": true
         }
       ],
-      "data": ""
+      "data": "AA"
     }
   ]
 }

@@ -7,20 +7,32 @@ package util
 #include <stdbool.h>
 #include <stdlib.h>
 
-extern bool simulate_transaction(
+extern bool simulate_transaction_with_so(
     const char* program_id,
     const char* accounts_json,
     const char* tx_json,
     const char* program_so_base64
 );
+extern bool simulate_transaction(const char* accounts_json, const char* tx_json);
 */
 import "C"
 import (
     "unsafe"
 )
 
-// SimulateTransaction calls the Rust function to simulate a Solana program
-func SimulateTransaction(programID, accountsJSON, txJSON string, programSoBase64 string) bool {
+// SimulateTransaction calls the Rust function to simulate a Solana transaction
+// using the provided accounts JSON and transaction JSON data
+func SimulateTransaction(accountsJSON, txJSON string) bool {
+   cAccountsJSON := C.CString(accountsJSON)
+   cTxJSON := C.CString(txJSON)
+   defer C.free(unsafe.Pointer(cAccountsJSON))
+   defer C.free(unsafe.Pointer(cTxJSON))
+
+   return bool(C.simulate_transaction(cAccountsJSON, cTxJSON))
+}
+
+// SimulateTransactionWithSo calls the Rust function to simulate a Solana program
+func SimulateTransactionWithSo(programID, accountsJSON, txJSON string, programSoBase64 string) bool {
     // Convert to C strings
     cProgramID := C.CString(programID)
     cAccountsJSON := C.CString(accountsJSON)
@@ -33,7 +45,7 @@ func SimulateTransaction(programID, accountsJSON, txJSON string, programSoBase64
     defer C.free(unsafe.Pointer(cTxJSON))
     defer C.free(unsafe.Pointer(cProgramSoBase64))
 
-    return bool(C.simulate_transaction(
+    return bool(C.simulate_transaction_with_so(
         cProgramID,
         cAccountsJSON,
         cTxJSON,

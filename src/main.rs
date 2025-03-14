@@ -1,12 +1,13 @@
 use base64::Engine;
-use solana_simulate::simulate_transaction;
+use solana_simulate::{simulate_transaction, simulate_transaction_with_so};
 use std::ffi::CString;
 use std::fs::File;
 use std::io::Read;
 
 
-// TODO BARRY 1. 编译出来linux x86对应的cgo库，然后改写main，可以让他们正确的索引
-// 2. 添加出来一个simulate TX只需要accounts.json & tx.json 我们一共提供两个函数给他们
+// TODO BARRY
+// 1. 编译出来linux x86对应的cgo库，然后改写main，可以让他们根据系统正确的索引到对应的函数
+// 2. 添加出来一个simulate TX只需要accounts.json & tx.json 我们一共提供两个函数给他们一个带so一个不带so
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Read program.so file
     let program_data = std::fs::read("/Users/barry/binance/solana-simulate/src/program.so")?;
@@ -34,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 6. Call simulation function
     let success = unsafe {
-        simulate_transaction(
+        simulate_transaction_with_so(
             program_id_c.as_ptr(),
             accounts_json_c.as_ptr(),
             tx_json_c.as_ptr(),

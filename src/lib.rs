@@ -145,7 +145,7 @@ pub fn simulate_transaction_with_accounts(accounts_json: &str,tx_json: &str) -> 
 }
 
 #[no_mangle]
-pub extern "C" fn simulate_transaction_with_accounts_c(accounts_json_ptr: *const c_char, tx_json_ptr: *const c_char) -> bool {
+pub extern "C" fn simulate_transaction(accounts_json_ptr: *const c_char, tx_json_ptr: *const c_char) -> bool {
     let c_str_to_rust = |ptr: *const c_char| -> Option<&'static str> {
         if ptr.is_null() {
             return None;
@@ -265,7 +265,7 @@ pub fn create_program_accounts(program_id: &Pubkey, program_data: &[u8]) -> (Acc
 }
 
 #[no_mangle]
-pub extern "C" fn simulate_transaction(
+pub extern "C" fn simulate_transaction_with_so(
     program_id_str: *const c_char,
     accounts_json_ptr: *const c_char,
     tx_json_ptr: *const c_char,
@@ -362,15 +362,6 @@ pub extern "C" fn simulate_transaction(
         Ok(data) => data,
         Err(_) => return false,
     };
-
-    // Update all instruction programIds
-    if let Some(instructions) = tx_data.get_mut("instructions").and_then(|i| i.as_array_mut()) {
-        for instruction in instructions {
-            if let Some(program_id_field) = instruction.get_mut("programId") {
-                *program_id_field = serde_json::Value::String(program_id.to_string());
-            }
-        }
-    }
 
     // 8. Call simulation function
     simulate_transaction_with_accounts(
