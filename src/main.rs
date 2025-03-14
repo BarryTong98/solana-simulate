@@ -4,11 +4,14 @@ use std::ffi::CString;
 use std::fs::File;
 use std::io::Read;
 
+
+// TODO BARRY 1. 编译出来linux x86对应的cgo库，然后改写main，可以让他们正确的索引
+// 2. 添加出来一个simulate TX只需要accounts.json & tx.json 我们一共提供两个函数给他们
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Read program.so file
     let program_data = std::fs::read("/Users/barry/binance/solana-simulate/src/program.so")?;
     let program_so_base64 =
-        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, program_data);
+        Engine::encode(&base64::engine::general_purpose::STANDARD, program_data);
 
     // 2. Read accounts.json file
     let mut accounts_file = File::open("./accounts.json")?;

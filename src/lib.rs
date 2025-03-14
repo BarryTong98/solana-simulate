@@ -1,6 +1,5 @@
 mod simulator;
 
-use std::fs::File;
 use std::io::Read;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
